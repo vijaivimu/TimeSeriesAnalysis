@@ -1,0 +1,36 @@
+# Virtual environments
+venv/
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Streamlit logs & temp files
+.streamlit/
+*.aax
+*.mp3
+*.log
+temp.*
+
+# VS Code settings
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Pip installed dependencies (optional, since we use requirements.txt)
+*.egg-info/
+.eggs/
+dist/
+build/
+*.whl
+
+# Ignore Jupyter/IPython checkpoints if used
+.ipynb_checkpoints/
