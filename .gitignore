@@ -34,3 +34,6 @@ build/
 
 # Ignore Jupyter/IPython checkpoints if used
 .ipynb_checkpoints/
+
+
+venv310_arm/
