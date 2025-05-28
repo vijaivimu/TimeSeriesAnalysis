@@ -4,81 +4,79 @@ import numpy as np
 import joblib
 import altair as alt
 
-# Load your trained model
-model = joblib.load('xgb_model.pkl')
+# Load the trained model
+model = joblib.load("xgb_model.pkl")
 
-st.title("Energy Consumption Forecasting App")
-st.markdown("🔮 Predict the next hour's energy consumption using the last 10 hours of Energy, Temperature, and Occupancy data.")
+st.set_page_config(page_title="Energy Forecasting", layout="wide")
 
-st.sidebar.header("Manual Input: Last 10 Hours")
+st.title("⚡ Energy Consumption Forecasting App")
+st.markdown("🔍 Predict the next hour's energy consumption using the last 10 hours of Energy, Temperature, and Occupancy data.")
 
-# Collect all EC lags first
-ec_lags = []
-temp_lags = []
-occ_lags = []
+st.sidebar.header("Input Features")
 
-for i in range(1, 11):
-    ec = st.sidebar.number_input(f"Energy Consumption lag {i}", value=75.0)
-    temp = st.sidebar.number_input(f"Temperature lag {i}", value=22.0)
-    occ = st.sidebar.number_input(f"Occupancy lag {i}", value=50.0)
+# User inputs for 10 lags of each feature
+ec_lags = [st.sidebar.slider(f"Energy Consumption lag {i}", 0.0, 150.0, 75.0, key=f"ec{i}") for i in range(1, 11)]
+temp_lags = [st.sidebar.slider(f"Temperature lag {i}", 0.0, 50.0, 22.0, key=f"temp{i}") for i in range(1, 11)]
+occ_lags = [st.sidebar.slider(f"Occupancy lag {i}", 0.0, 100.0, 50.0, key=f"occ{i}") for i in range(1, 11)]
 
-    ec_lags.append(ec)
-    temp_lags.append(temp)
-    occ_lags.append(occ)
-
-# Concatenate in correct order
+# Combine inputs into DataFrame for prediction
 input_data = ec_lags + temp_lags + occ_lags
-
-# Feature names must match training order
 feature_names = (
     [f'EC_lag_{i}' for i in range(1, 11)] +
     [f'Temp_lag_{i}' for i in range(1, 11)] +
     [f'Occ_lag_{i}' for i in range(1, 11)]
 )
-
 input_df = pd.DataFrame([input_data], columns=feature_names)
 
-if st.button("Predict Energy Consumption"):
+# Prediction and visualization
+if st.button("🎯 Predict Energy Consumption"):
     try:
+        # Ensure only expected features are passed
         input_df = input_df[model.feature_names_in_]
         prediction = model.predict(input_df)[0]
-        st.success(f"Predicted Energy Consumption (next hour): {prediction:.2f} kWh")
+        st.success(f"✅ Predicted Energy Consumption (next hour): **{prediction:.2f} kWh**")
 
-        # Prepare data
-        actual_hours = [f"-{i}h" for i in range(10, 1, -1)]   # -10h to -2h
-        actual_values = ec_lags[:-1]                         # exclude -1h
-        last_actual_hour = "-1h"
-        last_actual_value = ec_lags[-1]
-        prediction_hour = "+1h"
+        # Prepare data for chart
+        hours = [f"-{i}h" for i in range(10, 0, -1)] + ["+1h"]
+        values = ec_lags + [prediction]
+        types = ["Actual"] * 10 + ["Prediction"]
 
-        # DataFrames
-        df_actual = pd.DataFrame({
-            "Hour": pd.Categorical(actual_hours, categories=actual_hours + [last_actual_hour, prediction_hour], ordered=True),
-            "EnergyConsumption": actual_values,
-            "Type": "Actual"
+        chart_df = pd.DataFrame({
+            "Hour": hours,
+            "EnergyConsumption": values,
+            "Type": types
         })
 
-        df_pred_line = pd.DataFrame({
-            "Hour": [last_actual_hour, prediction_hour],
-            "EnergyConsumption": [last_actual_value, prediction],
-            "Type": "Prediction"
-        })
+        # Define x-axis order
+        hour_order = hours
 
-        full_df = pd.concat([df_actual, df_pred_line], ignore_index=True)
-
-        # Altair chart
-        line = alt.Chart(full_df).mark_line(point=True).encode(
-            x=alt.X('Hour', title='Time'),
+        # Base line chart
+        line = alt.Chart(chart_df).mark_line(point=True).encode(
+            x=alt.X('Hour', sort=hour_order, title='Time'),
             y=alt.Y('EnergyConsumption', title='Energy Consumption (kWh)'),
             color=alt.Color('Type', scale=alt.Scale(domain=['Actual', 'Prediction'], range=['#1f77b4', '#ff7f0e'])),
             tooltip=['Hour', 'EnergyConsumption', 'Type']
-        ).properties(
-            title="Last 10 Hours + Next Hour Prediction"
-        ).configure_axisX(
-            labelAngle=0
         )
 
-        st.altair_chart(line, use_container_width=True)
+        # Connector line between last actual and prediction
+        connector = pd.DataFrame({
+            "Hour": ["-1h", "+1h"],
+            "EnergyConsumption": [ec_lags[-1], prediction],
+            "Type": ["Prediction", "Prediction"]
+        })
+
+        connect_line = alt.Chart(connector).mark_line(point=True).encode(
+            x=alt.X("Hour", sort=hour_order),
+            y="EnergyConsumption",
+            color=alt.value("#ff7f0e")
+        )
+
+        # Combine charts
+        final_chart = (line + connect_line).properties(
+            title="📊 Last 10 Hours + Next Hour Prediction"
+        )
+
+        st.altair_chart(final_chart, use_container_width=True)
 
     except ValueError as e:
         st.error(f"Prediction failed due to feature mismatch: {e}")
