@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import altair as alt
 
 # Load your trained model
 model = joblib.load('xgb_model.pkl')
@@ -37,12 +38,47 @@ feature_names = (
 
 input_df = pd.DataFrame([input_data], columns=feature_names)
 
-# Run prediction
 if st.button("Predict Energy Consumption"):
     try:
-        input_df = input_df[model.feature_names_in_]  # 🔐 Match training feature order
+        input_df = input_df[model.feature_names_in_]
         prediction = model.predict(input_df)[0]
         st.success(f"Predicted Energy Consumption (next hour): {prediction:.2f} kWh")
-        st.line_chart(pd.Series(ec_lags[::-1], index=[f'-{i}h' for i in range(10, 0, -1)]))
+
+        # Prepare data
+        actual_hours = [f"-{i}h" for i in range(10, 1, -1)]   # -10h to -2h
+        actual_values = ec_lags[:-1]                         # exclude -1h
+        last_actual_hour = "-1h"
+        last_actual_value = ec_lags[-1]
+        prediction_hour = "+1h"
+
+        # DataFrames
+        df_actual = pd.DataFrame({
+            "Hour": pd.Categorical(actual_hours, categories=actual_hours + [last_actual_hour, prediction_hour], ordered=True),
+            "EnergyConsumption": actual_values,
+            "Type": "Actual"
+        })
+
+        df_pred_line = pd.DataFrame({
+            "Hour": [last_actual_hour, prediction_hour],
+            "EnergyConsumption": [last_actual_value, prediction],
+            "Type": "Prediction"
+        })
+
+        full_df = pd.concat([df_actual, df_pred_line], ignore_index=True)
+
+        # Altair chart
+        line = alt.Chart(full_df).mark_line(point=True).encode(
+            x=alt.X('Hour', title='Time'),
+            y=alt.Y('EnergyConsumption', title='Energy Consumption (kWh)'),
+            color=alt.Color('Type', scale=alt.Scale(domain=['Actual', 'Prediction'], range=['#1f77b4', '#ff7f0e'])),
+            tooltip=['Hour', 'EnergyConsumption', 'Type']
+        ).properties(
+            title="Last 10 Hours + Next Hour Prediction"
+        ).configure_axisX(
+            labelAngle=0
+        )
+
+        st.altair_chart(line, use_container_width=True)
+
     except ValueError as e:
         st.error(f"Prediction failed due to feature mismatch: {e}")
