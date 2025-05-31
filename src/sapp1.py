@@ -4,8 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import joblib
 
-import os
-st.write("Files in current directory:", os.listdir())
+
 
 # Load SARIMAX model
 results = joblib.load("sarimax_model.pkl")
