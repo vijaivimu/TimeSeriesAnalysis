@@ -4,47 +4,50 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import joblib
 
-# Load the SARIMAX model
+# Load SARIMAX model
 results = joblib.load("sarimax_model.pkl")
 
 # Page config
-st.set_page_config(page_title="Energy Heatmap", layout="wide")
+st.set_page_config(page_title="Watt-Wise Forecast", layout="wide")
 
-# Display top background image
-st.image("/Users/vimu/Documents/Data Science/SDS/Github/TimeSeriesAnalysis/src/energy consumption bg.png", use_column_width=True)
-
-# Title
-st.title("⚡ Energy Consumption Heatmap Forecast")
-
-# Create two columns
+# Create two columns (left = summary, right = inputs + output)
 left_col, right_col = st.columns([1, 2])
 
-# ==== Left Side: Model Info ====
+# === LEFT COLUMN: App Description ===
 with left_col:
-    st.subheader("📘 Model & Dataset Info")
+    st.markdown("## 📘 App Overview")
     st.markdown("""
-    **Model**: SARIMAX (Seasonal AutoRegressive Integrated Moving Average with eXogenous variables)  
-    **Target**: Energy Consumption  
-    **Exogenous Variables**: Temperature, Occupancy  
-    **Training Size**: 80% of the dataset  
-    **Evaluation Metric**: RMSE  
+    **This app uses a pre-trained SARIMAX model** to predict energy consumption based on:
 
-    📊 **Data Source**:  
-    [Kaggle - Energy Consumption Prediction](https://www.kaggle.com/datasets/mrsimple07/energy-consumption-prediction)
+    - Temperature  
+    - Occupancy  
+
+    The model forecasts energy consumption **1-hour ahead** for various scenarios.
+
+    ---
+    ### 🧠 Model Summary
+    - SARIMAX order: (1, 0, 1)
+    - Trained on 80% of hourly data  
+    - Uses exogenous features: Temperature, Occupancy  
+    - Performance evaluated with RMSE on holdout set  
+
+    ---
+    ### 📊 Dataset
+    **Source**: [Kaggle - Energy Consumption Prediction](https://www.kaggle.com/datasets/mrsimple07/energy-consumption-prediction)
     """)
-    st.markdown("---")
-    st.markdown("This model uses the latest **Temperature** and **Occupancy** values to estimate the energy consumption for the next time period. Adjust the sliders on the right to explore predictions.")
 
-# ==== Right Side: Input & Output ====
+# === RIGHT COLUMN: Image, Input, Heatmap ===
 with right_col:
-    st.subheader("🎛️ Predict with Temperature & Occupancy")
+    st.image("bg.png", use_container_width=True)
 
-    temp_range = st.slider("Select Temperature Range", min_value=10, max_value=40, value=(15, 30))
-    occ_range = st.slider("Select Occupancy Range", min_value=0, max_value=100, value=(0, 50), step=5)
+    st.markdown("## ⚙️ Forecast Inputs")
+    temp_range = st.slider("Temperature Range (°C)", 10, 40, (15, 30))
+    occ_range = st.slider("Occupancy Range", 0, 100, (0, 50), step=5)
 
     temps = list(range(temp_range[0], temp_range[1] + 1))
     occs = list(range(occ_range[0], occ_range[1] + 1, 5))
 
+    # Generate forecast data
     data = []
     for temp in temps:
         row = []
@@ -55,12 +58,13 @@ with right_col:
             row.append(pred)
         data.append(row)
 
+    # Heatmap
     heatmap_df = pd.DataFrame(data, index=temps, columns=occs)
 
-    st.subheader("🔥 Predicted Energy Consumption (kWh)")
+    st.markdown("## 🔥 Predicted Energy Consumption (kWh)")
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.heatmap(heatmap_df, annot=True, fmt=".1f", cmap="YlOrRd")
     ax.set_xlabel("Occupancy")
     ax.set_ylabel("Temperature")
-    ax.set_title("Predicted Energy Consumption (kWh)")
+    #ax.set_title("Predicted Energy Consumption (kWh)")
     st.pyplot(fig)
