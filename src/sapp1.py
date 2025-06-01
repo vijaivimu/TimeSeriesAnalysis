@@ -43,11 +43,11 @@ with right_col:
     st.image("bg.png", use_container_width=True)
 
     st.markdown("## ⚙️ Forecast Inputs")
-    temp_range = st.slider("Temperature Range (°C)", 10, 40, (15, 30))
-    occ_range = st.slider("Occupancy Range", 0, 100, (0, 50), step=5)
+    temp_range = st.slider("Temperature Range (°C)", 18, 32, (18, 32))
+    occ_range = st.slider("Occupancy Range", 0, 15, (0, 15), step=1)
 
     temps = list(range(temp_range[0], temp_range[1] + 1))
-    occs = list(range(occ_range[0], occ_range[1] + 1, 5))
+    occs = list(range(occ_range[0], occ_range[1] + 1))
 
     # Generate forecast data
     data = []
