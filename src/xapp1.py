@@ -14,15 +14,15 @@ st.markdown("🔍 Predict the next hour's energy consumption using the last 10 h
 
 st.sidebar.header("Input: Last 10 Hours")
 
-# 3-column input layout: Energy, Temperature, Occupancy
+# 3-column input layout: Energy, Temperature, Occupancy using sliders
 ec_lags, temp_lags, occ_lags = [], [], []
 for i in range(1, 11):
     with st.sidebar.container():
         st.markdown(f"**Hour -{i}**")
         cols = st.columns(3)
-        ec = cols[0].number_input(f"EC", min_value=0, max_value=100.0, value=75.0, key=f"ec_{i}")
-        temp = cols[1].number_input(f"Temp", min_value=20, max_value=32, value=22.0, key=f"temp_{i}")
-        occ = cols[2].number_input(f"Occ", min_value=0.0, max_value=15, value=2, key=f"occ_{i}")
+        ec = cols[0].slider("EC", min_value=0.0, max_value=100.0, value=75.0, key=f"ec_{i}")
+        temp = cols[1].slider("Temp", min_value=20.0, max_value=32.0, value=22.0, key=f"temp_{i}")
+        occ = cols[2].slider("Occ", min_value=0.0, max_value=15.0, value=2.0, key=f"occ_{i}")
         ec_lags.append(ec)
         temp_lags.append(temp)
         occ_lags.append(occ)
